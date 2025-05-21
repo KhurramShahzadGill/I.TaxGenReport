@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Data & Tax App (localStorage)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, Arial, sans-serif;
+      background: linear-gradient(135deg, #bfdbfe, #e9d5ff);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column; 
+      justify-content: flex-start; 
+      align-items: center; 
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px; 
+    }
+    h1 {
+      text-align: center;
+      color: #1e3a8a;
+      font-size: 2.2em;
+      margin-bottom: 25px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+    h2 { 
+      font-size: 1.5em;
+      color: #1f2937;
+      margin: 25px 0 15px;
+      border-bottom: 3px solid #1e40af;
+      padding-bottom: 8px;
+      font-weight: 600;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+    .input-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .input-group label {
+      margin-bottom: 7px;
+      font-size: 15px;
+      color: #374151;
+      font-weight: 600;
+    }
+    .input-group input, .input-group select {
+      padding: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: border 0.3s, box-shadow 0.3s;
+      width: 100%;
+    }
+    .input-group input:focus, .input-group select:focus {
+      outline: none;
+      border-color: #1e40af;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.2);
+    }
+    .month-inputs-section-title { 
+        font-size: 1.5em;
+        color: #1f2937;
+        margin: 25px 0 10px; 
+        border-bottom: 3px solid #1e40af;
+        padding-bottom: 8px;
+        font-weight: 600;
+    }
+    .month-header-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 1fr 1fr; 
+        gap: 10px;
+        padding: 8px 8px 4px 8px; 
+        margin-bottom: 5px; 
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+        border-bottom: 2px solid #e5e7eb; 
+    }
+    .month-header-row > div { 
+        text-align: center; 
+        padding: 5px 0;
+    }
+    .month-header-row .header-month-label { 
+        text-align: right;
+        padding-right: 8px; 
+    }
+
+    .month-row { 
+      display: grid;
+      grid-template-columns: 100px 1fr 1fr 1fr; 
+      gap: 10px; 
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    .month-row label {
+      font-size: 14px;
+      color: #374151;
+      font-weight: 500;
+      text-align: right;
+      padding-right: 8px;
+    }
+    .month-row input {
+      padding: 9px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 100%;
+    }
+    .month-row input:focus {
+      outline: none;
+      border-color: #1e40af;
+      box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.15);
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    button, .file-input-button {
+      flex: 1 1 auto;
+      padding: 12px 18px;
+      background: linear-gradient(90deg, #1e40af, #7c3aed);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 4px 15px rgba(30, 64, 175, 0.2);
+      text-align: center;
+    }
+    button:hover, .file-input-button:hover {
+      background: linear-gradient(90deg, #1e3a8a, #6d28d9);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
+    }
+    button:active, .file-input-button:active {
+      transform: scale(0.98) translateY(-1px);
+    }
+    button.secondary {
+        background: linear-gradient(90deg, #6b7280, #4b5563);
+    }
+    button.secondary:hover {
+        background: linear-gradient(90deg, #4b5563, #374151);
+    }
+    button.danger {
+        background: linear-gradient(90deg, #dc2626, #b91c1c);
+    }
+    button.danger:hover {
+        background: linear-gradient(90deg, #b91c1c, #991b1b);
+    }
+
+    .data-table-container {
+        margin-top: 30px;
+        overflow-x: auto; 
+        width: 100%;
+    }
+    .data-table {
+        width: 100%; 
+        min-width: 2200px; 
+        border-collapse: collapse;
+        font-size: 11px; 
+    }
+    .data-table th, .data-table td {
+        border: 1px solid #e5e7eb;
+        padding: 7px 9px; 
+        text-align: left;
+        vertical-align: middle;
+        white-space: nowrap; 
+    }
+    .data-table th {
+        background-color: #f3f4f6;
+        color: #1f2937;
+        font-weight: 600;
+        position: sticky; 
+        top: 0; 
+        z-index: 10; 
+    }
+    .data-table tr:nth-child(even) {
+        background-color: #f9fafb;
+    }
+    .data-table tr:hover {
+        background-color: #eef2ff;
+    }
+    .data-table .action-buttons button {
+        padding: 4px 7px; 
+        font-size: 11px;
+        margin-right: 4px;
+        min-width: 45px;
+    }
+    .data-table .action-buttons button:last-child {
+        margin-right: 0;
+    }
+    .file-input-wrapper {
+        display: inline-block;
+        position: relative;
+        overflow: hidden;
+        margin-right: 10px;
+    }
+    .file-input-wrapper input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: auto; 
+      padding: 20px 0; 
+      width: 100%; 
+      font-size: 14px;
+      color: #4b5563; 
+      font-weight: 500;
+    }
+    .message-box-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.6); display: flex; justify-content: center;
+        align-items: center; z-index: 1000; opacity: 0; visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0s 0.3s linear;
+    }
+    .message-box-overlay.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
+    .message-box-content {
+        background-color: white; padding: 25px 30px; border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15); text-align: center;
+        max-width: 400px; width: 90%; transform: scale(0.9); transition: transform 0.3s ease;
+    }
+    .message-box-overlay.visible .message-box-content { transform: scale(1); }
+    .message-box-content p { margin-bottom: 20px; font-size: 16px; color: #333; line-height: 1.6; }
+    .message-box-content button { padding: 10px 20px; font-size: 15px; min-width: 90px; }
+    .hidden { display: none; }
+
+    @media (max-width: 768px) {
+        body { padding: 15px; }
+        .container { padding: 20px; }
+        h1 { font-size: 1.8em; }
+        .form-grid { grid-template-columns: 1fr; }
+        .month-header-row, .month-row { grid-template-columns: 80px repeat(3, 1fr); } 
+        .data-table { font-size: 10px; min-width: 1500px; } 
+        .data-table th, .data-table td { padding: 5px 7px; }
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.6em; }
+      .input-group label, .input-group input, .input-group select { font-size: 14px; }
+      .input-group input, .input-group select { padding: 10px; }
+      .month-header-row { 
+        grid-template-columns: 1fr;
+        text-align: left;
+        padding-left: 10px; 
+      }
+      .month-header-row > div {
+        text-align: left;
+        padding: 2px 0;
+      }
+      .month-header-row .header-month-label {
+          text-align: left; 
+          padding-right: 0;
+      }
+      .month-row {
+        grid-template-columns: 1fr; 
+        grid-template-areas: 
+          "label"
+          "salary"
+          "tax"
+          "medallow"; 
+        gap: 8px; padding: 10px;
+      }
+      .month-row label { text-align: left; margin-bottom: 4px; grid-area: label;}
+      .month-row input:nth-of-type(1) { grid-area: salary; }
+      .month-row input:nth-of-type(2) { grid-area: tax; }
+      .month-row input:nth-of-type(3) { grid-area: medallow; } 
+      .month-row input { font-size: 13px; padding: 9px; }
+      h2, .month-inputs-section-title { font-size: 1.3em; }
+      .button-group { flex-direction: column; }
+      button, .file-input-button { font-size: 14px; padding: 12px; }
+      .data-table { font-size: 9px; min-width: 1200px; } 
+      .data-table th, .data-table td { padding: 4px 5px; }
+      .data-table .action-buttons button { padding: 3px 5px; font-size: 10px; min-width: 40px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Employee Data & Income Tax Statement 2024-25</h1>
+    
+    <h2>Employee Information</h2>
+    <input type="hidden" id="editingEmployeeId">
+    <div class="form-grid">
+      <div class="input-group"><label for="employeeName">Name:</label><input type="text" id="employeeName" placeholder="Employee Name" required></div>
+      <div class="input-group"><label for="cnic">CNIC:</label><input type="text" id="cnic" placeholder="00000-0000000-0"></div>
+      <div class="input-group"><label for="designation">Designation:</label><input type="text" id="designation" placeholder="Designation" required></div>
+      <div class="input-group"><label for="bsNo">BPS No.:</label><input type="number" id="bsNo" placeholder="BPS No. (1-22)" min="1" max="22" required></div>
+      <div class="input-group"><label for="branchName">Branch Name:</label><input type="text" id="branchName" placeholder="Branch Name" value="I&S Branch" required></div>
+      </div>
+    <div class="button-group">
+        <button id="saveEmployeeBtn" onclick="saveEmployeeData()">Save Employee Data</button>
+        <button id="clearFormBtn" onclick="clearEmployeeForm()" class="secondary">Clear Form</button>
+    </div>
+
+    <div class="month-inputs-section-title">Monthly Salary, Tax & Medical Allowance</div>
+    <div class="month-header-row">
+        <div class="header-month-label">Month</div>
+        <div>Gross Salary</div>
+        <div>Income Tax</div>
+        <div>Medical Allow.</div>
+    </div>
+    <div id="monthInputs">
+      </div>
+    <div class="button-group">
+      <button onclick="generatePDF(true)">Generate PDF Report</button>
+      <button onclick="generatePDF(false)" class="secondary">Preview PDF Report</button>
+    </div>
+
+    <h2>Stored Employee Records</h2>
+    <div class="button-group">
+        <div class="file-input-wrapper">
+            <button type="button" class="file-input-button">Import from Excel</button>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+        </div>
+        <button onclick="exportDataToExcel()">Export to Excel</button>
+        <button onclick="confirmDeleteAll()" class="danger">Delete All Records</button>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table" id="employeeDataTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>CNIC</th>
+            <th>Designation</th>
+            <th>BPS</th>
+            <th>Branch</th>
+            <script>
+              const SmonthsHeader = ['Jul-24', 'Aug-24', 'Sep-24', 'Oct-24', 'Nov-24', 'Dec-24', 'Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'May-25', 'Jun-25'];
+              SmonthsHeader.forEach(m => document.write(`<th>${m.replace('-','')} Sal.</th>`));
+            </script>
+            <script>
+              SmonthsHeader.forEach(m => document.write(`<th>${m.replace('-','')} Tax</th>`));
+            </script>
+            <script>
+              SmonthsHeader.forEach(m => document.write(`<th>${m.replace('-','')} Med.Allow.</th>`));
+            </script>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          </tbody>
+      </table>
+    </div>
+  </div> <footer>Developed by Khurram Gill</footer>
+
+  <div class="message-box-overlay" id="messageBoxOverlay">
+    <div class="message-box-content">
+        <p id="messageBoxText"></p>
+        <button id="messageBoxOkButton" onclick="closeMessageBox()">OK</button>
+        <button id="messageBoxConfirmButton" class="hidden" onclick="executeConfirmedAction()">Confirm</button>
+        <button id="messageBoxCancelButton" class="hidden secondary" onclick="closeMessageBox()">Cancel</button>
+    </div>
+  </div>
+
+  <script> // Changed to simple script tag, no module for localStorage version
+    
+    let currentConfirmedAction = null;
+    const globalMonths = ['Jul-24', 'Aug-24', 'Sep-24', 'Oct-24', 'Nov-24', 'Dec-24', 'Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'May-25', 'Jun-25'];
+    const LOCAL_STORAGE_KEY = 'employeeDataAppRecords_KG'; // Unique key for localStorage
+
+    // Function to dynamically create month input rows
+    function createMonthInputRows() {
+        const monthInputsDiv = document.getElementById('monthInputs');
+        monthInputsDiv.innerHTML = ''; 
+
+        globalMonths.forEach(monthStr => {
+            const monthIdSuffix = monthStr.replace('-', '');
+            const row = document.createElement('div');
+            row.classList.add('month-row');
+
+            const label = document.createElement('label');
+            label.textContent = monthStr;
+            row.appendChild(label);
+
+            const grossInput = document.createElement('input');
+            grossInput.type = 'number';
+            grossInput.id = `gross${monthIdSuffix}`;
+            grossInput.placeholder = 'Gross Salary';
+            grossInput.min = '0';
+            row.appendChild(grossInput);
+
+            const taxInput = document.createElement('input');
+            taxInput.type = 'number';
+            taxInput.id = `tax${monthIdSuffix}`;
+            taxInput.placeholder = 'Income Tax';
+            taxInput.min = '0';
+            row.appendChild(taxInput);
+
+            const medAllowInput = document.createElement('input');
+            medAllowInput.type = 'number';
+            medAllowInput.id = `med${monthIdSuffix}`;
+            medAllowInput.placeholder = 'Medical Allow.';
+            medAllowInput.min = '0';
+            row.appendChild(medAllowInput);
+            
+            if (monthStr === 'May-25' && taxInput.id === `taxMay25`) {
+                taxInput.placeholder = 'Income Tax (Auto/Manual)';
+            }
+            if (monthStr === 'Jun-25' && taxInput.id === `taxJun25`) {
+                taxInput.value = '0';
+                taxInput.readOnly = true;
+            }
+            monthInputsDiv.appendChild(row);
+        });
+    }
+
+    const employeeForm = {
+        name: document.getElementById('employeeName'), cnic: document.getElementById('cnic'),
+        designation: document.getElementById('designation'), bsNo: document.getElementById('bsNo'),
+        branchName: document.getElementById('branchName'), 
+        editingId: document.getElementById('editingEmployeeId'), saveBtn: document.getElementById('saveEmployeeBtn')
+    };
+
+    // --- localStorage Helper Functions ---
+    function getStoredEmployees() {
+        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    }
+
+    function storeEmployees(employees) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(employees));
+    }
+    // --- End localStorage Helper Functions ---
+
+    window.saveEmployeeData = () => { // No async needed for localStorage
+        const monthlySalaries = [];
+        const monthlyTaxes = [];
+        const monthlyMedicalAllowances = [];
+
+        globalMonths.forEach(monthStr => {
+            const monthIdSuffix = monthStr.replace('-', '');
+            const grossEl = document.getElementById(`gross${monthIdSuffix}`);
+            const taxEl = document.getElementById(`tax${monthIdSuffix}`);
+            const medEl = document.getElementById(`med${monthIdSuffix}`);
+            
+            monthlySalaries.push(grossEl ? Number(grossEl.value) || 0 : 0);
+            monthlyTaxes.push(taxEl ? Number(taxEl.value) || 0 : 0);
+            monthlyMedicalAllowances.push(medEl ? Number(medEl.value) || 0 : 0);
+        });
+
+        const employeeData = {
+            id: employeeForm.editingId.value || Date.now().toString(), // Use existing ID or generate new
+            name: employeeForm.name.value.trim(), 
+            cnic: employeeForm.cnic.value.trim(), 
+            designation: employeeForm.designation.value.trim(), 
+            bsNo: Number(employeeForm.bsNo.value),
+            branchName: employeeForm.branchName.value.trim(), 
+            monthlySalaries: monthlySalaries, 
+            monthlyTaxes: monthlyTaxes,
+            monthlyMedicalAllowances: monthlyMedicalAllowances,
+            // No serverTimestamp for localStorage, can add simple string date if needed
+            // updatedAt: new Date().toISOString() 
+        };
+
+        if (!employeeData.name || !employeeData.designation || !employeeData.bsNo || !employeeData.branchName) {
+            showMessageBox("Please fill Name, Designation, BPS No., and Branch Name fields."); return;
+        }
+        if (employeeData.bsNo < 1 || employeeData.bsNo > 22) { showMessageBox("BPS No. must be between 1 and 22."); return; }
+        
+        try {
+            let employees = getStoredEmployees();
+            if (employeeForm.editingId.value) { // Update
+                employees = employees.map(emp => emp.id === employeeForm.editingId.value ? employeeData : emp);
+                showMessageBox("Employee data updated successfully!"); 
+            } else { // Add new
+                // employeeData.createdAt = new Date().toISOString(); // Add if needed
+                employees.push(employeeData);
+                showMessageBox("Employee data saved successfully!"); 
+            }
+            storeEmployees(employees);
+            loadEmployeeData(); // Refresh table
+            clearEmployeeForm(); 
+        } catch (error) {
+            console.error("Error saving employee data to localStorage: ", error); 
+            showMessageBox("Error saving data: " + error.message);
+        }
+    };
+    
+    window.clearEmployeeForm = () => {
+        employeeForm.name.value = ''; employeeForm.cnic.value = '';
+        employeeForm.designation.value = ''; employeeForm.bsNo.value = '';
+        employeeForm.branchName.value = 'I&S Branch'; 
+        employeeForm.editingId.value = '';
+        employeeForm.saveBtn.textContent = 'Save Employee Data';
+        
+        globalMonths.forEach(monthStr => {
+            const monthIdSuffix = monthStr.replace('-', '');
+            const grossEl = document.getElementById(`gross${monthIdSuffix}`);
+            const taxEl = document.getElementById(`tax${monthIdSuffix}`);
+            const medEl = document.getElementById(`med${monthIdSuffix}`);
+
+            if (grossEl) grossEl.value = '';
+            if (medEl) medEl.value = ''; 
+
+            if (taxEl && taxEl.id !== 'taxJun25') { 
+                 taxEl.value = '';
+                 delete taxEl.dataset.edited; 
+            }
+        });
+        const taxJun25El = document.getElementById('taxJun25');
+        if (taxJun25El) taxJun25El.value = '0'; 
+
+        updateSalariesAndTaxes(); 
+        employeeForm.name.focus();
+    };
+
+    function loadEmployeeData() {
+        const employeesArray = getStoredEmployees();
+        const employeeDataTableBody = document.getElementById('employeeDataTable').getElementsByTagName('tbody')[0];
+        employeeDataTableBody.innerHTML = '';
+        
+        // Sort if needed (example: by name)
+        employeesArray.sort((a, b) => (a.name && b.name) ? a.name.localeCompare(b.name) : 0);
+
+        employeesArray.forEach((employee) => {
+            const row = employeeDataTableBody.insertRow();
+            row.insertCell().textContent = employee.name || 'N/A';
+            row.insertCell().textContent = employee.cnic || ''; 
+            row.insertCell().textContent = employee.designation || 'N/A';
+            row.insertCell().textContent = employee.bsNo || 'N/A';
+            row.insertCell().textContent = employee.branchName || 'N/A';
+            
+            globalMonths.forEach((_, index) => {
+                row.insertCell().textContent = (employee.monthlySalaries && employee.monthlySalaries[index] !== undefined) ? employee.monthlySalaries[index] : '0';
+            });
+            globalMonths.forEach((_, index) => {
+                row.insertCell().textContent = (employee.monthlyTaxes && employee.monthlyTaxes[index] !== undefined) ? employee.monthlyTaxes[index] : '0';
+            });
+            globalMonths.forEach((_, index) => { 
+                row.insertCell().textContent = (employee.monthlyMedicalAllowances && employee.monthlyMedicalAllowances[index] !== undefined) ? employee.monthlyMedicalAllowances[index] : '0';
+            });
+
+            const actionsCell = row.insertCell();
+            actionsCell.classList.add('action-buttons');
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Edit';
+            editButton.onclick = () => editEmployeeInForm(employee);
+            actionsCell.appendChild(editButton);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.classList.add('danger');
+            deleteButton.onclick = () => confirmDeleteEmployee(employee.id, employee.name);
+            actionsCell.appendChild(deleteButton);
+        });
+    }
+
+    window.editEmployeeInForm = (employee) => {
+        employeeForm.name.value = employee.name || '';
+        employeeForm.cnic.value = employee.cnic || ''; 
+        employeeForm.designation.value = employee.designation || '';
+        employeeForm.bsNo.value = employee.bsNo || '';
+        employeeForm.branchName.value = employee.branchName || 'I&S Branch';
+        employeeForm.editingId.value = employee.id; // Set ID for update
+        employeeForm.saveBtn.textContent = 'Update Employee Data';
+
+        globalMonths.forEach((monthStr, index) => {
+            const monthIdSuffix = monthStr.replace('-', '');
+            const grossEl = document.getElementById(`gross${monthIdSuffix}`);
+            const taxEl = document.getElementById(`tax${monthIdSuffix}`);
+            const medEl = document.getElementById(`med${monthIdSuffix}`);
+
+            if (grossEl) grossEl.value = (employee.monthlySalaries && employee.monthlySalaries[index] !== undefined) ? employee.monthlySalaries[index] : '';
+            if (medEl) medEl.value = (employee.monthlyMedicalAllowances && employee.monthlyMedicalAllowances[index] !== undefined) ? employee.monthlyMedicalAllowances[index] : '';
+            
+            if (taxEl && taxEl.id !== 'taxJun25') { 
+                 taxEl.value = (employee.monthlyTaxes && employee.monthlyTaxes[index] !== undefined) ? employee.monthlyTaxes[index] : '';
+                 if (taxEl.id === 'taxMay25' && taxEl.value !== '') {
+                    taxEl.dataset.edited = 'true';
+                 } else {
+                    delete taxEl.dataset.edited;
+                 }
+            }
+        });
+        const taxJun25El = document.getElementById('taxJun25');
+        if (taxJun25El) taxJun25El.value = '0'; 
+
+        updateSalariesAndTaxes(); 
+        employeeForm.name.focus();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.confirmDeleteEmployee = (id, name) => {
+        currentConfirmedAction = () => deleteEmployee(id, true); 
+        showConfirmationBox(`Are you sure you want to delete employee "${name || 'this record'}"? This action cannot be undone.`);
+    };
+    
+    function deleteEmployee(employeeId, isConfirmedAction = false) { 
+        try {
+            let employees = getStoredEmployees();
+            employees = employees.filter(emp => emp.id !== employeeId);
+            storeEmployees(employees);
+            loadEmployeeData(); // Refresh table
+            if (!isConfirmedAction) { 
+                showMessageBox("Employee data deleted successfully.");
+            }
+        } catch (error) { 
+            console.error("Error deleting employee data from localStorage: ", error); 
+            showMessageBox("Error deleting data: " + error.message); 
+        }
+    }
+
+    window.confirmDeleteAll = () => { 
+        currentConfirmedAction = () => deleteAllData(true); 
+        showConfirmationBox("Are you sure you want to delete ALL employee records? This action cannot be undone.");
+    };
+
+    function deleteAllData(isConfirmedAction = false) { 
+        try {
+            localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear all data
+            loadEmployeeData(); // Refresh table (will be empty)
+            if (!isConfirmedAction) { 
+                showMessageBox("All employee records have been deleted.");
+            }
+        } catch (error) { 
+            console.error("Error deleting all data from localStorage: ", error); 
+            showMessageBox("Error deleting all data: " + error.message); 
+        }
+    }
+
+    window.exportDataToExcel = () => { // No async for localStorage
+        try {
+            const employees = getStoredEmployees();
+            if (employees.length === 0) { showMessageBox("No data to export."); return; }
+            
+            const cleanedEmployees = employees.map(emp => {
+                const record = {
+                    Name: emp.name, CNIC: emp.cnic || '', Designation: emp.designation,
+                    BPS: emp.bsNo, Branch: emp.branchName, 
+                };
+                globalMonths.forEach((monthStr, index) => {
+                    const monthIdSuffix = monthStr.replace('-', '');
+                    record[`${monthIdSuffix}_Salary`] = (emp.monthlySalaries && emp.monthlySalaries[index] !== undefined) ? emp.monthlySalaries[index] : '';
+                    record[`${monthIdSuffix}_Tax`] = (emp.monthlyTaxes && emp.monthlyTaxes[index] !== undefined) ? emp.monthlyTaxes[index] : '';
+                    record[`${monthIdSuffix}_MedAllow`] = (emp.monthlyMedicalAllowances && emp.monthlyMedicalAllowances[index] !== undefined) ? emp.monthlyMedicalAllowances[index] : '';
+                });
+                // Remove the 'id' field before exporting if it was added for internal tracking
+                delete record.id; 
+                return record;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(cleanedEmployees);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+            XLSX.writeFile(workbook, "EmployeeData_FullMonthly.xlsx");
+            showMessageBox("Data exported to EmployeeData_FullMonthly.xlsx"); 
+        } catch (error) { 
+            console.error("Error exporting to Excel: ", error); 
+            showMessageBox("Error exporting data: " + error.message); 
+        }
+    };
+
+    window.handleExcelImport = (event) => { // No async for localStorage
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) { showMessageBox("Excel file is empty."); return; }
+
+                let importedCount = 0, skippedCount = 0;
+                let employees = getStoredEmployees();
+
+                for (const item of jsonData) {
+                    const importedMonthlySalaries = [];
+                    const importedMonthlyTaxes = [];
+                    const importedMonthlyMedicalAllowances = [];
+
+                    globalMonths.forEach(monthStr => {
+                        const monthIdSuffix = monthStr.replace('-', '');
+                        importedMonthlySalaries.push(Number(item[`${monthIdSuffix}_Salary`]) || 0);
+                        importedMonthlyTaxes.push(Number(item[`${monthIdSuffix}_Tax`]) || 0);
+                        importedMonthlyMedicalAllowances.push(Number(item[`${monthIdSuffix}_MedAllow`]) || 0);
+                    });
+
+                    if (item.Name && item.Designation && item.BPS && item.Branch) {
+                        const employeeData = {
+                            id: Date.now().toString() + Math.random().toString(36).substring(2,7), // More unique ID for local
+                            name: String(item.Name).trim(), 
+                            cnic: item.CNIC ? String(item.CNIC).trim() : '', 
+                            designation: String(item.Designation).trim(), 
+                            bsNo: Number(item.BPS),
+                            branchName: String(item.Branch).trim(), 
+                            monthlySalaries: importedMonthlySalaries, 
+                            monthlyTaxes: importedMonthlyTaxes,
+                            monthlyMedicalAllowances: importedMonthlyMedicalAllowances,
+                        };
+                        employees.push(employeeData);
+                        importedCount++;
+                    } else { skippedCount++; console.warn("Skipping row due to missing essential data (Name, Designation, BPS, Branch):", item); } 
+                }
+                storeEmployees(employees);
+                loadEmployeeData(); // Refresh table
+                showMessageBox(`Imported ${importedCount} records. Skipped ${skippedCount} records.`); 
+            } catch (error) { 
+                console.error("Error importing from Excel: ", error); 
+                showMessageBox("Error importing data: " + error.message);
+            } finally { event.target.value = null; }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const bpsIncrements = { 1:430,2:490,3:580,4:660,5:750,6:840,7:910,8:1000,9:1090,10:1190,11:1310,12:1430,13:1560,14:1740,15:1980,16:2260,17:3420,18:4260,19:4530,20:6690,21:7420,22:8710 };
+    const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+    const messageBoxText = document.getElementById('messageBoxText');
+    const messageBoxOkButton = document.getElementById('messageBoxOkButton');
+    const messageBoxConfirmButton = document.getElementById('messageBoxConfirmButton');
+    const messageBoxCancelButton = document.getElementById('messageBoxCancelButton');
+
+    function showMessageBox(message) { 
+        messageBoxText.innerText = message; messageBoxOkButton.classList.remove('hidden');
+        messageBoxConfirmButton.classList.add('hidden'); messageBoxCancelButton.classList.add('hidden');
+        messageBoxOverlay.classList.add('visible');
+    }
+    function showConfirmationBox(message) { 
+        messageBoxText.innerText = message; messageBoxOkButton.classList.add('hidden');
+        messageBoxConfirmButton.classList.remove('hidden'); messageBoxCancelButton.classList.remove('hidden');
+        messageBoxOverlay.classList.add('visible');
+    }
+    window.closeMessageBox = function() { 
+        messageBoxOverlay.classList.remove('visible'); currentConfirmedAction = null; 
+    }
+    window.executeConfirmedAction = function() { 
+        if (typeof currentConfirmedAction === 'function') { currentConfirmedAction(); } 
+        closeMessageBox(); 
+    }
+    function calculateIncomeTax(annualTaxableSalary) { 
+        annualTaxableSalary = Math.round(annualTaxableSalary);
+        if (annualTaxableSalary <= 600000) return 0;
+        if (annualTaxableSalary <= 1200000) return Math.round((annualTaxableSalary - 600000) * 0.05);
+        if (annualTaxableSalary <= 2200000) return Math.round(30000 + (annualTaxableSalary - 1200000) * 0.15);
+        if (annualTaxableSalary <= 3200000) return Math.round(180000 + (annualTaxableSalary - 2200000) * 0.25);
+        if (annualTaxableSalary <= 4100000) return Math.round(430000 + (annualTaxableSalary - 3200000) * 0.30);
+        return Math.round(700000 + (annualTaxableSalary - 4100000) * 0.35);
+    }
+    function generateTaxEquation(annualTaxableSalary) { 
+        annualTaxableSalary = Math.round(annualTaxableSalary); const formatNum = (num) => num.toLocaleString('en-IN');
+        if (annualTaxableSalary <= 600000) return `Taxable Salary (${formatNum(annualTaxableSalary)}) ≤ ${formatNum(600000)}, Tax = 0`;
+        if (annualTaxableSalary <= 1200000) { const e = annualTaxableSalary - 600000; const t = Math.round(e*0.05); return `(${formatNum(annualTaxableSalary)} - ${formatNum(600000)}) × 5% = ${formatNum(e)} × 0.05 = Rs. ${formatNum(t)}`; }
+        if (annualTaxableSalary <= 2200000) { const e = annualTaxableSalary - 1200000; const t = Math.round(30000 + e*0.15); return `Rs. ${formatNum(30000)} + (${formatNum(annualTaxableSalary)} - ${formatNum(1200000)}) × 15% = Rs. ${formatNum(30000)} + ${formatNum(e)} × 0.15 = Rs. ${formatNum(t)}`; }
+        if (annualTaxableSalary <= 3200000) { const e = annualTaxableSalary - 2200000; const t = Math.round(180000 + e*0.25); return `Rs. ${formatNum(180000)} + (${formatNum(annualTaxableSalary)} - ${formatNum(2200000)}) × 25% = Rs. ${formatNum(180000)} + ${formatNum(e)} × 0.25 = Rs. ${formatNum(t)}`; }
+        if (annualTaxableSalary <= 4100000) { const e = annualTaxableSalary - 3200000; const t = Math.round(430000 + e*0.30); return `Rs. ${formatNum(430000)} + (${formatNum(annualTaxableSalary)} - ${formatNum(3200000)}) × 30% = Rs. ${formatNum(430000)} + ${formatNum(e)} × 0.30 = Rs. ${formatNum(t)}`; }
+        const e = annualTaxableSalary - 4100000; const t = Math.round(700000 + e*0.35); return `Rs. ${formatNum(700000)} + (${formatNum(annualTaxableSalary)} - ${formatNum(4100000)}) × 35% = Rs. ${formatNum(700000)} + ${formatNum(e)} × 0.35 = Rs. ${formatNum(t)}`;
+    }
+    
+    function updateSalariesAndTaxes() { 
+        const bsNoForPDF = parseInt(document.getElementById('bsNo')?.value) || 0;
+        // Salary Propagation
+        let lastSalaryPart1 = Math.round(parseFloat(document.getElementById('grossJul24')?.value) || 0);
+        if (document.getElementById('grossJul24')?.dataset.edited === 'true') { lastSalaryPart1 = Math.round(parseFloat(document.getElementById('grossJul24').value) || 0); }
+        for (let i = 0; i <= 4; i++) { const mId = globalMonths[i].replace('-',''); const inp = document.getElementById(`gross${mId}`); if(inp){ if(inp.dataset.edited === 'true'){lastSalaryPart1 = Math.round(parseFloat(inp.value)||lastSalaryPart1);} else { if(i>0 || (i===0 && !inp.value && document.getElementById('grossJul24').value)){inp.value = lastSalaryPart1?lastSalaryPart1:'';} else if(i===0 && inp.value){lastSalaryPart1 = Math.round(parseFloat(inp.value)||0);}}}}
+        const novSal = Math.round(parseFloat(document.getElementById('grossNov24')?.value)||0); const decInp = document.getElementById('grossDec24'); let decSal = novSal;
+        if(decInp){ if(decInp.dataset.edited === 'true'){decSal = Math.round(parseFloat(decInp.value)||novSal);} else { if(novSal>0 && bsNoForPDF >=1 && bsNoForPDF <=22){const inc = bpsIncrements[bsNoForPDF]||0; const incBon = bsNoForPDF<=16?Math.round(inc*0.25):Math.round(inc*0.20); decSal = Math.round(novSal+inc+incBon); decInp.value = decSal||'';} else {decInp.value = novSal?novSal:''; decSal = novSal;}}}
+        let lastSalPart2 = decSal;
+        for (let i=5; i<=11; i++){ const mId = globalMonths[i].replace('-',''); const inp = document.getElementById(`gross${mId}`); if(inp){ if(inp.id === 'grossDec24'){ if(inp.dataset.edited === 'true'){lastSalPart2 = Math.round(parseFloat(inp.value)||lastSalPart2);} else {lastSalPart2 = Math.round(parseFloat(inp.value)||lastSalPart2);} continue;} if(inp.dataset.edited === 'true'){lastSalPart2 = Math.round(parseFloat(inp.value)||lastSalPart2);} else {inp.value = lastSalPart2?lastSalPart2:'';}}}
+        
+        // Tax Propagation (excluding May)
+        let lastTax = Math.round(parseFloat(document.getElementById('taxJul24')?.value)||0); 
+        if(document.getElementById('taxJul24')?.dataset.edited === 'true'){lastTax = Math.round(parseFloat(document.getElementById('taxJul24').value)||0);}
+        for (let i=0; i<=9; i++){ 
+            const mId = globalMonths[i].replace('-', ''); 
+            const inp = document.getElementById(`tax${mId}`); 
+            if(inp && inp.id !== 'taxMay25'){ 
+                if(inp.dataset.edited === 'true'){
+                    lastTax = Math.round(parseFloat(inp.value)||lastTax);
+                } else { 
+                    if(i>0 || (i===0 && !inp.value && document.getElementById('taxJul24').value)){
+                        inp.value = lastTax!==undefined?lastTax:(inp.value||'0');
+                    } else if(i===0 && inp.value){
+                        lastTax = Math.round(parseFloat(inp.value)||0);
+                    } else if(i===0 && !inp.value){
+                        inp.value='0'; lastTax=0;
+                    }
+                }
+            }
+        }
+
+        // Medical Allowance Propagation
+        let lastMedAllow = Math.round(parseFloat(document.getElementById('medJul24')?.value) || 0);
+        if (document.getElementById('medJul24')?.dataset.edited === 'true') { lastMedAllow = Math.round(parseFloat(document.getElementById('medJul24').value) || 0); }
+        for (let i = 0; i < globalMonths.length; i++) { 
+            const mId = globalMonths[i].replace('-', '');
+            const inp = document.getElementById(`med${mId}`);
+            if (inp) {
+                if (inp.dataset.edited === 'true') {
+                    lastMedAllow = Math.round(parseFloat(inp.value) || lastMedAllow);
+                } else {
+                    if (i > 0 || (i === 0 && !inp.value && document.getElementById('medJul24').value)) {
+                        inp.value = lastMedAllow !== undefined ? lastMedAllow : (inp.value || '0');
+                    } else if (i === 0 && inp.value) {
+                        lastMedAllow = Math.round(parseFloat(inp.value) || 0);
+                    } else if (i === 0 && !inp.value) {
+                        inp.value = '0'; lastMedAllow = 0;
+                    }
+                }
+            }
+        }
+
+        // May Tax Calculation
+        const grossSals = globalMonths.map(m => {const inp = document.getElementById(`gross${m.replace('-','')}`); return inp && inp.value ? Math.round(parseFloat(inp.value)||0):0;});
+        const incTaxesTillApr = globalMonths.slice(0,10).map(m => {const inp = document.getElementById(`tax${m.replace('-','')}`); return inp && inp.value ? Math.round(parseFloat(inp.value)||0):0;});
+        const monthlyMedAllows = globalMonths.map(m => {const inp = document.getElementById(`med${m.replace('-','')}`); return inp && inp.value ? Math.round(parseFloat(inp.value)||0):0;});
+        
+        const mayTaxInp = document.getElementById('taxMay25'); 
+        const junTaxInp = document.getElementById('taxJun25'); 
+        if(junTaxInp) junTaxInp.value = 0; 
+
+        if (mayTaxInp) {
+            if (mayTaxInp.dataset.edited === 'true') {
+                // Value is manually set, do nothing to overwrite
+            } else {
+                const totalGrossSal = Math.round(grossSals.reduce((s,v)=>s+v,0)); 
+                const totalAnnualMedicalAllowance = Math.round(monthlyMedAllows.reduce((s,v)=>s+v,0)); 
+                const annTaxableSal = Math.round(totalGrossSal - totalAnnualMedicalAllowance); 
+                const totalAnnTaxDue = calculateIncomeTax(annTaxableSal);
+                const taxDedTillApr = Math.round(incTaxesTillApr.reduce((s,v)=>s+v,0)); 
+                const taxInMay = Math.round(totalAnnTaxDue - taxDedTillApr);
+                mayTaxInp.value = taxInMay >= 0 ? taxInMay : 0;
+            }
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        createMonthInputRows(); 
+
+        const taxMay25Input = document.getElementById('taxMay25');
+        if (taxMay25Input) {
+            taxMay25Input.addEventListener('input', (event) => {
+                const currentInput = event.target;
+                if (currentInput.type === 'number' && currentInput.value !== '') {
+                    const value = parseFloat(currentInput.value);
+                    if (!isNaN(value)) { currentInput.value = Math.round(value); } 
+                    else if (currentInput.value !== '') { currentInput.value = ''; }
+                }
+                currentInput.dataset.edited = 'true';
+            });
+        }
+        
+        document.querySelectorAll('#monthInputs input:not([readonly])').forEach(input => { 
+            if (input.id !== 'taxMay25') { 
+                input.addEventListener('input', (event) => { 
+                    const currInp = event.target; 
+                    if(currInp.type === 'number' && currInp.value !== ''){ 
+                        const val = parseFloat(currInp.value); 
+                        if(!isNaN(val)){currInp.value = Math.round(val);} 
+                        else if (currInp.value !== ''){ currInp.value = '';}
+                    } 
+                    if(currInp.id.startsWith('gross') || currInp.id.startsWith('tax') || currInp.id.startsWith('med')){ currInp.dataset.edited = 'true';} 
+                    updateSalariesAndTaxes(); 
+                });
+            }
+        });
+        document.getElementById('bsNo').addEventListener('input', updateSalariesAndTaxes);
+        updateSalariesAndTaxes(); 
+        loadEmployeeData(); // Load data from localStorage on page load
+    });
+
+    window.generatePDF = function(save = true) { 
+        if (!window.jspdf || !window.jspdf.jsPDF) { showMessageBox('Error: jsPDF library not loaded.'); return; }
+        const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        if (!doc.autoTable) { showMessageBox('Error: jsPDF-AutoTable plugin not loaded.'); return; }
+        try {
+          const empNameForPDF = document.getElementById('employeeName')?.value.trim() || 'N/A';
+          const cnicForPDF = document.getElementById('cnic')?.value.trim() || ''; 
+          const desigForPDF = document.getElementById('designation')?.value.trim() || 'N/A';
+          const bsNoForPDF = parseInt(document.getElementById('bsNo')?.value) || 0;
+          const branchForPDF = document.getElementById('branchName')?.value.trim() || 'N/A';
+          
+          let allInputsValidPDF = true;
+          if (!empNameForPDF||empNameForPDF==='N/A' || !desigForPDF||desigForPDF==='N/A' || bsNoForPDF<1||bsNoForPDF>22 || !branchForPDF||branchForPDF==='N/A' ) {
+            allInputsValidPDF = false;
+          }
+          
+          const grossSalariesPDF = []; 
+          const incomeTaxesPDF = [];
+          const monthlyMedicalAllowancesPDF = [];
+
+          globalMonths.forEach((monthStr) => {
+            const mIdSuf = monthStr.replace('-',''); 
+            const grossIn = document.getElementById(`gross${mIdSuf}`); 
+            const taxIn = document.getElementById(`tax${mIdSuf}`);
+            const medIn = document.getElementById(`med${mIdSuf}`);
+
+            const grossV = grossIn && grossIn.value !== '' ? Math.round(parseFloat(grossIn.value)) : 0; 
+            const taxV = taxIn && taxIn.value !== '' ? Math.round(parseFloat(taxIn.value)) : 0;       
+            const medV = medIn && medIn.value !== '' ? Math.round(parseFloat(medIn.value)) : 0;
+
+            grossSalariesPDF.push(grossV); 
+            incomeTaxesPDF.push(taxV); 
+            monthlyMedicalAllowancesPDF.push(medV);
+
+            if (grossV < 0) allInputsValidPDF = false; 
+            if (taxV < 0) allInputsValidPDF = false; 
+            if (medV < 0) allInputsValidPDF = false;
+          });
+
+          if (!allInputsValidPDF) { 
+            showMessageBox('PDF Error: Please fill Name, Designation, BPS, Branch Name correctly. Monthly salaries, taxes, and medical allowances must be zero or positive.'); 
+            return; 
+          }
+          
+          doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0); doc.text(`Income Tax Statement 2024-25`,105,18,{align:'center'});
+          doc.setFontSize(12); doc.text(`${branchForPDF}, District Council Faisalabad`,105,26,{align:'center'});
+          doc.setLineWidth(0.5); doc.setDrawColor(0,0,0); doc.line(20,30,190,30);
+          doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(0,0,0); let yP = 40;
+          doc.text('Name:',20,yP); doc.setFont('helvetica','normal'); doc.text(empNameForPDF,50,yP); doc.setFont('helvetica','bold'); doc.text('CNIC:',110,yP); doc.setFont('helvetica','normal'); doc.text(cnicForPDF,140,yP); yP+=9;
+          doc.text('Designation:',20,yP); doc.setFont('helvetica','normal'); doc.text(desigForPDF,50,yP); doc.setFont('helvetica','bold'); doc.text('BPS No.:',110,yP); doc.setFont('helvetica','normal'); doc.text(bsNoForPDF.toString(),140,yP); yP+=9;
+          
+          const tableDataPDF = globalMonths.map((month, index) => { 
+            const grossS = grossSalariesPDF[index]; 
+            const actualMedAllowForThisMonthInTable = monthlyMedicalAllowancesPDF[index]; 
+            const taxSMonth = Math.round(grossS - actualMedAllowForThisMonthInTable); 
+            const incTaxMonth = incomeTaxesPDF[index]; 
+            return [month, grossS.toLocaleString(), actualMedAllowForThisMonthInTable.toLocaleString(), taxSMonth.toLocaleString(), incTaxMonth.toLocaleString()]; 
+          });
+          
+          const totalGrossSalPDF = Math.round(grossSalariesPDF.reduce((s,v)=>s+v,0)); 
+          const totalMedicalAllowanceAnnualPDF = Math.round(monthlyMedicalAllowancesPDF.reduce((s,v)=>s+v,0)); 
+          const annTaxSalPDF = Math.round(totalGrossSalPDF - totalMedicalAllowanceAnnualPDF); 
+          const totalTaxPaidPDF = Math.round(incomeTaxesPDF.reduce((s,v)=>s+v,0));
+          
+          tableDataPDF.push([{content:'Total',styles:{fontStyle:'bold'}}, {content:totalGrossSalPDF.toLocaleString(),styles:{fontStyle:'bold'}}, {content:totalMedicalAllowanceAnnualPDF.toLocaleString(),styles:{fontStyle:'bold'}}, {content:annTaxSalPDF.toLocaleString(),styles:{fontStyle:'bold'}}, {content:totalTaxPaidPDF.toLocaleString(),styles:{fontStyle:'bold'}}]);
+          doc.autoTable({ startY:yP+5, head:[['Month','Gross Salary (Rs.)','Medical All. (Rs.)','Taxable Salary (Rs.)','Income Tax Paid (Rs.)']], body:tableDataPDF, theme:'plain', margin:{left:20,right:20}, styles:{fontSize:11,cellPadding:1.5,textColor:[0,0,0]}, headStyles:{fillColor:[220,220,220],textColor:[0,0,0],fontStyle:'bold',fontSize:11,halign:'center',lineWidth:{bottom:0.1,top:0.1,left:0.1,right:0.1},lineColor:[0,0,0]}, columnStyles:{0:{cellWidth:25,halign:'left'},1:{cellWidth:'auto',halign:'right'},2:{cellWidth:'auto',halign:'right'},3:{cellWidth:'auto',halign:'right'},4:{cellWidth:'auto',halign:'right'}}, didDrawCell:(data)=>{if(data.cell.section==='body'){doc.setDrawColor(0,0,0);doc.setLineWidth(0.1);doc.line(data.cell.x,data.cell.y+data.cell.height,data.cell.x+data.cell.width,data.cell.y+data.cell.height);} if(data.row.index===tableDataPDF.length-1 && data.cell.section==='body'){doc.setDrawColor(0,0,0);doc.setLineWidth(0.4);doc.line(data.cell.x,data.cell.y,data.cell.x+data.cell.width,data.cell.y);}}});
+          const totalAnnTaxDueCalcPDF = calculateIncomeTax(annTaxSalPDF); const taxEqPDF = generateTaxEquation(annTaxSalPDF); const diffPDF = totalTaxPaidPDF - totalAnnTaxDueCalcPDF; const overLessTxtPDF = diffPDF===0?'Nil':diffPDF>0?`Overpaid by Rs. ${diffPDF.toLocaleString()}`:`Underpaid by Rs. ${(-diffPDF).toLocaleString()}`; const taxDedJulToAprPDF = incomeTaxesPDF.slice(0,10).reduce((s,v)=>s+v,0); const taxDedMayPDF = incomeTaxesPDF[10];
+          const summaryDataPDF = [[`Total Annual Taxable Salary:`,`Rs. ${annTaxSalPDF.toLocaleString()}`], [`Total Income Tax Payable (Calculated):`,`Rs. ${totalAnnTaxDueCalcPDF.toLocaleString()}`], [{content:`Calculation: ${taxEqPDF}`,colSpan:2,styles:{fontSize:11,fontStyle:'italic',textColor:[0,0,0]}}], [`Total Income Tax Deducted (Jul-24 to Apr-25):`,`Rs. ${taxDedJulToAprPDF.toLocaleString()}`], [`Income Tax Deducted in May-25:`,`Rs. ${taxDedMayPDF.toLocaleString()}`], [`Total Income Tax Deducted & Paid:`,`Rs. ${totalTaxPaidPDF.toLocaleString()}`], [`Difference (Paid vs. Payable):`,overLessTxtPDF]];
+          doc.autoTable({ startY:doc.lastAutoTable.finalY+8, body:summaryDataPDF, theme:'plain', margin:{left:20,right:20}, styles:{fontSize:11,cellPadding:2,textColor:[0,0,0]}, columnStyles:{0:{fontStyle:'bold',cellWidth:140},1:{halign:'right',cellWidth:'auto'}}, didParseCell:(data)=>{if(data.row.index===4){data.cell.styles.fontStyle='bold';data.cell.styles.fillColor=[240,240,240];} if(data.row.index===5){data.cell.styles.fontSize=13;data.cell.styles.fontStyle='bold';} if(data.row.index===summaryDataPDF.length-1){data.cell.styles.fontStyle='bold'; if(diffPDF>0)data.cell.styles.textColor=[0,0,0]; if(diffPDF<0)data.cell.styles.textColor=[0,0,0];}}});
+          const safeFileName = (empNameForPDF!=='N/A'?empNameForPDF.replace(/\s+/g,'_'):'Employee')+'_Income_Tax_Statement_2024-25.pdf';
+          if(save){try{doc.save(safeFileName);}catch(e){console.error('Download Error:',e);showMessageBox('Download failed.');}} 
+          else{const blob=doc.output('blob');const url=URL.createObjectURL(blob);const prevWin=window.open(url,'_blank');if(!prevWin){showMessageBox('Preview failed. Allow pop-ups.');}}
+        } catch (error) { console.error('PDF Generation Error:', error); showMessageBox('Error generating PDF: ' + error.message); } 
+    };
+    
+  </script>
+</body>
+</html>
