@@ -390,13 +390,12 @@
     </div>
   </div>
 
-  <script> // Changed to simple script tag, no module for localStorage version
+  <script> 
     
     let currentConfirmedAction = null;
     const globalMonths = ['Jul-24', 'Aug-24', 'Sep-24', 'Oct-24', 'Nov-24', 'Dec-24', 'Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'May-25', 'Jun-25'];
-    const LOCAL_STORAGE_KEY = 'employeeDataAppRecords_KG'; // Unique key for localStorage
+    const LOCAL_STORAGE_KEY = 'employeeDataAppRecords_KG_v2'; // Changed key slightly in case of old data
 
-    // Function to dynamically create month input rows
     function createMonthInputRows() {
         const monthInputsDiv = document.getElementById('monthInputs');
         monthInputsDiv.innerHTML = ''; 
@@ -449,7 +448,6 @@
         editingId: document.getElementById('editingEmployeeId'), saveBtn: document.getElementById('saveEmployeeBtn')
     };
 
-    // --- localStorage Helper Functions ---
     function getStoredEmployees() {
         const data = localStorage.getItem(LOCAL_STORAGE_KEY);
         return data ? JSON.parse(data) : [];
@@ -458,9 +456,8 @@
     function storeEmployees(employees) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(employees));
     }
-    // --- End localStorage Helper Functions ---
-
-    window.saveEmployeeData = () => { // No async needed for localStorage
+    
+    window.saveEmployeeData = () => { 
         const monthlySalaries = [];
         const monthlyTaxes = [];
         const monthlyMedicalAllowances = [];
@@ -477,7 +474,7 @@
         });
 
         const employeeData = {
-            id: employeeForm.editingId.value || Date.now().toString(), // Use existing ID or generate new
+            id: employeeForm.editingId.value || Date.now().toString() + Math.random().toString(36).substring(2,7), 
             name: employeeForm.name.value.trim(), 
             cnic: employeeForm.cnic.value.trim(), 
             designation: employeeForm.designation.value.trim(), 
@@ -486,8 +483,6 @@
             monthlySalaries: monthlySalaries, 
             monthlyTaxes: monthlyTaxes,
             monthlyMedicalAllowances: monthlyMedicalAllowances,
-            // No serverTimestamp for localStorage, can add simple string date if needed
-            // updatedAt: new Date().toISOString() 
         };
 
         if (!employeeData.name || !employeeData.designation || !employeeData.bsNo || !employeeData.branchName) {
@@ -497,16 +492,15 @@
         
         try {
             let employees = getStoredEmployees();
-            if (employeeForm.editingId.value) { // Update
+            if (employeeForm.editingId.value) { 
                 employees = employees.map(emp => emp.id === employeeForm.editingId.value ? employeeData : emp);
                 showMessageBox("Employee data updated successfully!"); 
-            } else { // Add new
-                // employeeData.createdAt = new Date().toISOString(); // Add if needed
+            } else { 
                 employees.push(employeeData);
                 showMessageBox("Employee data saved successfully!"); 
             }
             storeEmployees(employees);
-            loadEmployeeData(); // Refresh table
+            loadEmployeeData(); 
             clearEmployeeForm(); 
         } catch (error) {
             console.error("Error saving employee data to localStorage: ", error); 
@@ -527,8 +521,8 @@
             const taxEl = document.getElementById(`tax${monthIdSuffix}`);
             const medEl = document.getElementById(`med${monthIdSuffix}`);
 
-            if (grossEl) grossEl.value = '';
-            if (medEl) medEl.value = ''; 
+            if (grossEl) { grossEl.value = ''; delete grossEl.dataset.edited; }
+            if (medEl) { medEl.value = ''; delete medEl.dataset.edited; }
 
             if (taxEl && taxEl.id !== 'taxJun25') { 
                  taxEl.value = '';
@@ -547,7 +541,6 @@
         const employeeDataTableBody = document.getElementById('employeeDataTable').getElementsByTagName('tbody')[0];
         employeeDataTableBody.innerHTML = '';
         
-        // Sort if needed (example: by name)
         employeesArray.sort((a, b) => (a.name && b.name) ? a.name.localeCompare(b.name) : 0);
 
         employeesArray.forEach((employee) => {
@@ -588,7 +581,7 @@
         employeeForm.designation.value = employee.designation || '';
         employeeForm.bsNo.value = employee.bsNo || '';
         employeeForm.branchName.value = employee.branchName || 'I&S Branch';
-        employeeForm.editingId.value = employee.id; // Set ID for update
+        employeeForm.editingId.value = employee.id; 
         employeeForm.saveBtn.textContent = 'Update Employee Data';
 
         globalMonths.forEach((monthStr, index) => {
@@ -597,12 +590,18 @@
             const taxEl = document.getElementById(`tax${monthIdSuffix}`);
             const medEl = document.getElementById(`med${monthIdSuffix}`);
 
-            if (grossEl) grossEl.value = (employee.monthlySalaries && employee.monthlySalaries[index] !== undefined) ? employee.monthlySalaries[index] : '';
-            if (medEl) medEl.value = (employee.monthlyMedicalAllowances && employee.monthlyMedicalAllowances[index] !== undefined) ? employee.monthlyMedicalAllowances[index] : '';
+            if (grossEl) {
+                grossEl.value = (employee.monthlySalaries && employee.monthlySalaries[index] !== undefined) ? employee.monthlySalaries[index] : '';
+                if (grossEl.value !== '') grossEl.dataset.edited = 'true'; else delete grossEl.dataset.edited;
+            }
+            if (medEl) {
+                medEl.value = (employee.monthlyMedicalAllowances && employee.monthlyMedicalAllowances[index] !== undefined) ? employee.monthlyMedicalAllowances[index] : '';
+                if (medEl.value !== '') medEl.dataset.edited = 'true'; else delete medEl.dataset.edited;
+            }
             
             if (taxEl && taxEl.id !== 'taxJun25') { 
                  taxEl.value = (employee.monthlyTaxes && employee.monthlyTaxes[index] !== undefined) ? employee.monthlyTaxes[index] : '';
-                 if (taxEl.id === 'taxMay25' && taxEl.value !== '') {
+                 if (taxEl.value !== '') { // If loading a value, mark as edited
                     taxEl.dataset.edited = 'true';
                  } else {
                     delete taxEl.dataset.edited;
@@ -627,7 +626,7 @@
             let employees = getStoredEmployees();
             employees = employees.filter(emp => emp.id !== employeeId);
             storeEmployees(employees);
-            loadEmployeeData(); // Refresh table
+            loadEmployeeData(); 
             if (!isConfirmedAction) { 
                 showMessageBox("Employee data deleted successfully.");
             }
@@ -644,8 +643,8 @@
 
     function deleteAllData(isConfirmedAction = false) { 
         try {
-            localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear all data
-            loadEmployeeData(); // Refresh table (will be empty)
+            localStorage.removeItem(LOCAL_STORAGE_KEY); 
+            loadEmployeeData(); 
             if (!isConfirmedAction) { 
                 showMessageBox("All employee records have been deleted.");
             }
@@ -655,7 +654,7 @@
         }
     }
 
-    window.exportDataToExcel = () => { // No async for localStorage
+    window.exportDataToExcel = () => { 
         try {
             const employees = getStoredEmployees();
             if (employees.length === 0) { showMessageBox("No data to export."); return; }
@@ -671,7 +670,6 @@
                     record[`${monthIdSuffix}_Tax`] = (emp.monthlyTaxes && emp.monthlyTaxes[index] !== undefined) ? emp.monthlyTaxes[index] : '';
                     record[`${monthIdSuffix}_MedAllow`] = (emp.monthlyMedicalAllowances && emp.monthlyMedicalAllowances[index] !== undefined) ? emp.monthlyMedicalAllowances[index] : '';
                 });
-                // Remove the 'id' field before exporting if it was added for internal tracking
                 delete record.id; 
                 return record;
             });
@@ -687,7 +685,7 @@
         }
     };
 
-    window.handleExcelImport = (event) => { // No async for localStorage
+    window.handleExcelImport = (event) => { 
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -718,7 +716,7 @@
 
                     if (item.Name && item.Designation && item.BPS && item.Branch) {
                         const employeeData = {
-                            id: Date.now().toString() + Math.random().toString(36).substring(2,7), // More unique ID for local
+                            id: Date.now().toString() + Math.random().toString(36).substring(2,7), 
                             name: String(item.Name).trim(), 
                             cnic: item.CNIC ? String(item.CNIC).trim() : '', 
                             designation: String(item.Designation).trim(), 
@@ -733,7 +731,7 @@
                     } else { skippedCount++; console.warn("Skipping row due to missing essential data (Name, Designation, BPS, Branch):", item); } 
                 }
                 storeEmployees(employees);
-                loadEmployeeData(); // Refresh table
+                loadEmployeeData(); 
                 showMessageBox(`Imported ${importedCount} records. Skipped ${skippedCount} records.`); 
             } catch (error) { 
                 console.error("Error importing from Excel: ", error); 
@@ -870,10 +868,14 @@
         if (taxMay25Input) {
             taxMay25Input.addEventListener('input', (event) => {
                 const currentInput = event.target;
+                const valBeforeParse = currentInput.value;
+                let numValue = parseFloat(valBeforeParse);
+                // console.log(`Input Event (taxMay25): ID=${currentInput.id}, Value Before Parse='${valBeforeParse}', Parsed Float=${numValue}`);
                 if (currentInput.type === 'number' && currentInput.value !== '') {
-                    const value = parseFloat(currentInput.value);
-                    if (!isNaN(value)) { currentInput.value = Math.round(value); } 
-                    else if (currentInput.value !== '') { currentInput.value = ''; }
+                    if (!isNaN(numValue)) {
+                        currentInput.value = Math.round(numValue);
+                        // console.log(`Input Event (taxMay25): ID=${currentInput.id}, Value After Round='${currentInput.value}'`);
+                    } else if (valBeforeParse !== '') { currentInput.value = '';}
                 }
                 currentInput.dataset.edited = 'true';
             });
@@ -883,19 +885,26 @@
             if (input.id !== 'taxMay25') { 
                 input.addEventListener('input', (event) => { 
                     const currInp = event.target; 
+                    const valBeforeParse = currInp.value;
+                    let numValue = parseFloat(valBeforeParse);
+                    // console.log(`Input Event: ID=${currInp.id}, Value Before Parse='${valBeforeParse}', Parsed Float=${numValue}`);
+
                     if(currInp.type === 'number' && currInp.value !== ''){ 
-                        const val = parseFloat(currInp.value); 
-                        if(!isNaN(val)){currInp.value = Math.round(val);} 
-                        else if (currInp.value !== ''){ currInp.value = '';}
+                        if(!isNaN(numValue)){
+                            currInp.value = Math.round(numValue);
+                            // console.log(`Input Event: ID=${currInp.id}, Value After Round='${currInp.value}'`);
+                        } 
+                        else if (valBeforeParse !== ''){ currInp.value = '';}
                     } 
                     if(currInp.id.startsWith('gross') || currInp.id.startsWith('tax') || currInp.id.startsWith('med')){ currInp.dataset.edited = 'true';} 
+                    // console.log(`${currInp.id} marked as edited. UpdateSalariesAndTaxes will run.`);
                     updateSalariesAndTaxes(); 
                 });
             }
         });
         document.getElementById('bsNo').addEventListener('input', updateSalariesAndTaxes);
         updateSalariesAndTaxes(); 
-        loadEmployeeData(); // Load data from localStorage on page load
+        loadEmployeeData(); 
     });
 
     window.generatePDF = function(save = true) { 
